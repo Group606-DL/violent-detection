@@ -1,7 +1,5 @@
-from src.models.visual.i3d_model import Inception_Inflated3d, Inception_Inflated3d_Top, add_i3d_top
-from src.prepare_dataset.video_builder import FRAME_HEIGHT, FRAME_WIDTH
+from .i3d_model import Inception_Inflated3d, Inception_Inflated3d_Top, add_i3d_top
 from keras import Model, optimizers
-
 
 def layers_freeze(keras_model: Model) -> Model:
     for layer in keras_model.layers:

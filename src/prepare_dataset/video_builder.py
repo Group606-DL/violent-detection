@@ -2,10 +2,11 @@ import math
 import os
 import cv2
 import numpy as np
-from src.utils.globals import logger, config
+from utils.globals import logger, config
 
 # Globals
 FRAMES_PER_SECOND = 24
+SLIDING_WINDOW = 16
 FRAME_WIDTH = 224
 FRAME_HEIGHT = 224
 
@@ -47,7 +48,7 @@ def get_optical_flow(gray_frames):
 
     # Padding the last frame as empty array
     flows.append(np.zeros((224, 224, 2)))
-    return np.array(flows, dtype=np.float32)
+    return np.asarray(flows, dtype=np.float32)
 
 
 def video_to_frames(video_directory: str, video_file: str):
@@ -77,7 +78,7 @@ def video_to_frames(video_directory: str, video_file: str):
             # Resize pixels
             frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
             frame = crop_center_square(frame)
-            frame = frame.reshape(FRAME_HEIGHT, FRAME_WIDTH, 3)
+            frame = frame.reshape(1, FRAME_HEIGHT, FRAME_WIDTH, 3)
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
             gray_frames.append(np.reshape(gray_frame, (224, 224, 1)))
             frames.append(frame)
@@ -85,7 +86,7 @@ def video_to_frames(video_directory: str, video_file: str):
 
     # When everything is done, release the capture
     cap.release()
-    frames = np.array(frames)
+    frames = np.asarray(frames)
     gray_frames = np.array(gray_frames)
 
     logger.debug(f'done extraction: {video_path}')

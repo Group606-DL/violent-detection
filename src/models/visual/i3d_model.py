@@ -36,84 +36,6 @@ WEIGHTS_PATH_NO_TOP = {
 }
 
 
-# def _validate_input_shape(input_shape,
-#                           default_frame_size,
-#                           min_frame_size,
-#                           default_num_frames,
-#                           min_num_frames,
-#                           data_format,
-#                           require_flatten,
-#                           weights=None):
-#     """Internal utility to validate the model's input shape.
-#     # Arguments
-#         input_shape: either None (will return the default network input shape),
-#             or a user-provided shape to be validated.
-#         default_frame_size: default input frames(images) width/height for the model.
-#         min_frame_size: minimum input frames(images) width/height accepted by the model.
-#         default_num_frames: default input number of frames(images) for the model.
-#         min_num_frames: minimum input number of frames accepted by the model.
-#         data_format: image data format to use.
-#         require_flatten: whether the model is expected to
-#             be linked to a classifier via a Flatten layer.
-#         weights: one of `None` (random initialization)
-#             or 'kinetics_only' (pre-training on Kinetics dataset).
-#             or 'imagenet_and_kinetics' (pre-training on ImageNet and Kinetics datasets).
-#             If weights='kinetics_only' or weights=='imagenet_and_kinetics' then
-#             input channels must be equal to 3.
-#     # Returns
-#         An integer shape tuple (may include None entries).
-#     # Raises
-#         ValueError: in case of invalid argument values.
-#     """
-#     if weights != 'kinetics_only' and weights != 'imagenet_and_kinetics' and input_shape and len(input_shape) == 4:
-#         if input_shape[-1] not in {1, 2, 3}:
-#             warnings.warn(
-#                 'This model usually expects 1-3 input channels. '
-#                 'However, it was passed an input_shape with ' +
-#                 str(input_shape[-1]) + ' input channels.')
-#         default_shape = (default_num_frames, default_frame_size, default_frame_size, input_shape[-1])
-#     else:
-#         if data_format == 'channels_first':
-#             default_shape = (3, default_num_frames, default_frame_size, default_frame_size)
-#         else:
-#             default_shape = (default_num_frames, default_frame_size, default_frame_size, 3)
-#     if (weights == 'kinetics_only' or weights == 'imagenet_and_kinetics') and require_flatten:
-#         if input_shape is not None:
-#             if input_shape != default_shape:
-#                 raise ValueError('When setting`include_top=True` '
-#                                  'and loading `imagenet` weights, '
-#                                  '`input_shape` should be ' +
-#                                  str(default_shape) + '.')
-#         return default_shape
-#
-#     if input_shape:
-#         if input_shape is not None:
-#             if len(input_shape) != 4:
-#                 raise ValueError('`input_shape` must be a tuple of four integers.')
-#
-#             if input_shape[0] is not None and input_shape[0] < min_num_frames:
-#                 raise ValueError('Input number of frames must be at least ' +
-#                                  str(min_num_frames) + '; got `input_shape=' + str(input_shape) + '`')
-#
-#             if ((input_shape[1] is not None and input_shape[1] < min_frame_size) or
-#                     (input_shape[2] is not None and input_shape[2] < min_frame_size)):
-#                 raise ValueError('Input size must be at least ' +
-#                                  str(min_frame_size) + 'x' + str(min_frame_size) + '; got '
-#                                                                                    '`input_shape=' + str(
-#                     input_shape) + '`')
-#     else:
-#         if require_flatten:
-#             input_shape = default_shape
-#         else:
-#             input_shape = (None, None, None, 3)
-#     if require_flatten:
-#         if None in input_shape:
-#             raise ValueError('If `include_top` is True, '
-#                              'you should specify a static `input_shape`. '
-#                              'Got `input_shape=' + str(input_shape) + '`')
-#     return input_shape
-
-
 def conv3d_bn(x,
               filters,
               num_frames,
@@ -224,17 +146,6 @@ def Inception_Inflated3d(include_top=True,
     if weights in WEIGHTS_NAME and include_top and classes != 400:
         raise ValueError('If using `weights` as one of these %s, with `include_top`'
                          ' as true, `classes` should be 400' % str(WEIGHTS_NAME))
-
-    # # Determine proper input shape
-    # input_shape = _validate_input_shape(
-    #     input_shape,
-    #     default_frame_size=224,
-    #     min_frame_size=32,
-    #     default_num_frames=64,
-    #     min_num_frames=8,
-    #     data_format=K.image_data_format(),
-    #     require_flatten=include_top,
-    #     weights='_'.join(weights.split('_')[1:]))
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
@@ -530,3 +441,161 @@ def i3d_load(s_path: str, n_frames_norm: int, tuple_image_shape: tuple, num_clas
         raise ValueError("Unexpected I3D output shape")
 
     return keras_model
+
+#
+# def assign_tuple_value(source_tuple, index, value):
+#     """
+#     Assign a value to tuple at the indicated position
+#     :param tuple: the tuple to alter
+#     :param index: position of the value to set
+#     :param value: the value to set
+#     :return: modified tuple
+#     """
+#     temp_list = list(source_tuple)
+#     temp_list[index] = value
+#     return tuple(temp_list)
+#
+#
+# def TwoStream_Inception_Inflated3d(include_top=True,
+#                                    weights=None,
+#                                    input_tensor=None,
+#                                    flow_input_shape=None,
+#                                    rgb_input_shape=None,
+#                                    dropout_prob=0.0,
+#                                    endpoint_logit=True,
+#                                    classes=400):
+#     """
+#     :param include_top:
+#     :param weights: List of two pre_trained model weights RGB and FLOW respectively
+#     :param input_tensor:
+#     :param flow_input_shape:
+#     :param rgb_input_shape:
+#     :param dropout_prob:
+#     :param endpoint_logit:
+#     :param classes:
+#     :return:
+#     """
+#
+#     if not (weights in WEIGHTS_NAME or weights is None or os.path.exists(weights)):
+#         raise ValueError('The `weights` argument should be either '
+#                          '`None` (random initialization) or %s' %
+#                          str(WEIGHTS_NAME) + ' '
+#                                              'or a valid path to a file containing `weights` values')
+#
+#     if weights in WEIGHTS_NAME and include_top and classes != 400:
+#         raise ValueError('If using `weights` as one of these %s, with `include_top`'
+#                          ' as true, `classes` should be 400' % str(WEIGHTS_NAME))
+#
+#     # Determine flow and rgb input shapes
+#     flow_input_shape = assign_tuple_value(flow_input_shape, 3, 2)
+#     rgb_input_shape = assign_tuple_value(rgb_input_shape, 3, 3)
+#
+#     if input_tensor is None:
+#         rgb_img_input = Input(shape=rgb_input_shape)
+#         flow_img_input = Input(shape=flow_input_shape)
+#     else:
+#         if not K.is_keras_tensor(input_tensor):
+#             rgb_img_input = Input(tensor=input_tensor, shape=rgb_input_shape)
+#             flow_img_input = Input(tensor=input_tensor, shape=flow_input_shape)
+#         else:
+#             rgb_img_input = input_tensor
+#             flow_img_input = input_tensor
+#
+#     if K.image_data_format() == 'channels_first':
+#         channel_axis = 1
+#     else:
+#         channel_axis = 4
+#
+#     flow_x = i3d_structure(flow_img_input,
+#                            channel_axis,
+#                            include_top,
+#                            dropout_prob,
+#                            endpoint_logit,
+#                            classes,
+#                            type='flow')
+#
+#     rgb_x = i3d_structure(rgb_img_input,
+#                           channel_axis,
+#                           include_top,
+#                           dropout_prob,
+#                           endpoint_logit,
+#                           classes,
+#                           type='rgb')
+#     # create model
+#     FLOW_stream = Model(input=flow_img_input, output=flow_x, name='flow_stream_i3d_inception')
+#     RGB_stream = Model(input=rgb_img_input, output=rgb_x, name='rgb_stream_i3d_inception')
+#
+#     # load weights
+#     if weights in WEIGHTS_NAME:
+#         if weights == WEIGHTS_NAME[0, 1]:  # rgb_kinetics_only and flow_kinetics_only
+#             if include_top:
+#                 rgb_weights_url = WEIGHTS_PATH['rgb_kinetics_only']
+#                 rgb_model_name = 'i3d_inception_rgb_kinetics_only.h5'
+#                 flow_weights_url = WEIGHTS_PATH['flow_kinetics_only']
+#                 flow_model_name = 'i3d_inception_flow_kinetics_only.h5'
+#             else:
+#                 rgb_weights_url = WEIGHTS_PATH_NO_TOP['rgb_kinetics_only']
+#                 rgb_model_name = 'i3d_inception_rgb_kinetics_only_no_top.h5'
+#                 flow_weights_url = WEIGHTS_PATH_NO_TOP['flow_kinetics_only']
+#                 flow_model_name = 'i3d_inception_flow_kinetics_only_no_top.h5'
+#
+#         elif weights == WEIGHTS_NAME[2, 3]:  # rgb_imagenet_and_kinetics and flow_imagenet_and_kinetics
+#             if include_top:
+#                 rgb_weights_url = WEIGHTS_PATH['rgb_imagenet_and_kinetics']
+#                 rgb_model_name = 'i3d_inception_rgb_imagenet_and_kinetics.h5'
+#                 flow_weights_url = WEIGHTS_PATH['flow_imagenet_and_kinetics']
+#                 flow_model_name = 'i3d_inception_flow_imagenet_and_kinetics.h5'
+#             else:
+#                 rgb_weights_url = WEIGHTS_PATH_NO_TOP['rgb_imagenet_and_kinetics']
+#                 rgb_model_name = 'i3d_inception_rgb_imagenet_and_kinetics_no_top.h5'
+#                 flow_weights_url = WEIGHTS_PATH_NO_TOP['flow_imagenet_and_kinetics']
+#                 flow_model_name = 'i3d_inception_flow_imagenet_and_kinetics_no_top.h5'
+#
+#         downloaded_rgb_weights_path = get_file(rgb_model_name, rgb_weights_url, cache_subdir='models')
+#         downloaded_flow_weights_path = get_file(flow_model_name, flow_weights_url, cache_subdir='models')
+#         RGB_stream.load_weights(downloaded_rgb_weights_path)
+#         FLOW_stream.load_weights(downloaded_flow_weights_path)
+#
+#         if K.backend() == 'theano':
+#             layer_utils.convert_all_kernels_in_model(RGB_stream)
+#             layer_utils.convert_all_kernels_in_model(FLOW_stream)
+#
+#         if K.image_data_format() == 'channels_first' and K.backend() == 'tensorflow':
+#             warnings.warn('You are using the TensorFlow backend, yet you '
+#                           'are using the Theano '
+#                           'image data format convention '
+#                           '(`image_data_format="channels_first"`). '
+#                           'For best performance, set '
+#                           '`image_data_format="channels_last"` in '
+#                           'your keras config '
+#                           'at ~/.keras/keras.json.')
+#
+#         x = RGB_stream.layers[-1].output
+#         x = Flatten()(x)
+#
+#         y = FLOW_stream.layers[-1].output
+#         y = Flatten()(y)
+#
+#     elif weights is not None:
+#         RGB_stream.load_weights(weights[0])
+#         FLOW_stream.load_weights(weights[1])
+#
+#         x = RGB_stream.layers[-1].output
+#         x = Flatten()(x)
+#
+#         y = FLOW_stream.layers[-1].output
+#         y = Flatten()(y)
+#
+#     else:  # No Weights
+#         x = RGB_stream.layers[-1].output
+#         x = Flatten()(x)
+#
+#         y = FLOW_stream.layers[-1].output
+#         y = Flatten()(y)
+#
+#     global_stream = layers.concatenate([x, y])
+#     global_stream = Dense(classes, activation='softmax', name='predictions')(global_stream)
+#
+#     model = Model(input=[rgb_img_input, flow_img_input], output=global_stream, name='TwoStream_I3D')
+#
+#     return model

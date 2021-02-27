@@ -1,16 +1,7 @@
-from src.models.visual.visual_model import get_visual_model
-from src.utils.globals import logger
-from src.prepare_dataset.dataset import VideoDataset
+from models.visual.visual_model import get_visual_model
+from utils.globals import logger
+from prepare_dataset.dataset import VideoDataset
 
-import numpy as np
-# TODO: change to pkg and not relative imports
-
-# datasets = [
-#     # VideoDataset(dataset_name="violentflow", path="../data/violentflow"),
-#     # VideoDataset(dataset_name="movies", path="../data/movies"),
-#     # VideoDataset(dataset_name="ming", path="../data/ming", train_test=True)
-#     VideoDataset(dataset_name="XD-Violence", path="../data/XD-Violence", train_test=True)
-# ]
 
 datasets = [
     VideoDataset(
@@ -26,13 +17,17 @@ for dataset in datasets:
     logger.debug(f'pre-processing dataset: {dataset.dataset_name}')
     dataset_violent = dataset.dataset_builder()
 
-    rgb_model = get_visual_model(input_shape=dataset_violent.videos_frames[0].shape, num_classes=len(dataset_violent.dataset_labels))
-    flow_model = get_visual_model(input_shape=dataset_violent.videos_flows[0].shape, num_classes=len(dataset_violent.dataset_labels),type_model='flow')
+    rgb_model = get_visual_model(input_shape=(32, 224, 224, 3), num_classes=len(dataset_violent.dataset_labels))
+    flow_model = get_visual_model(input_shape=(32, 224, 224, 2), num_classes=len(dataset_violent.dataset_labels),
+                                  type_model='flow')
 
-    frame_batch, flow_batch, label_batch = dataset_violent.get_batch(0)
-    for i in range(16):
-        rgb_model.fit(x=frame_batch[i], y=label_batch[i], batch_size=dataset_violent.batch_size, verbose=1)
-        # flow_model.fit(x=flow_batch, y=label_batch, batch_size=dataset_violent.batch_size)
+    for epoch in range(5):
+        for video_index in range(dataset_violent.dataset_count):
+            generator = dataset_violent.get_batch(video_index)
+            for (frame_batch, flow_batch, label_batch) in generator:
+                rgb_model.fit(x=frame_batch, y=label_batch, batch_size=dataset_violent.batch_size, verbose=1)
+                # flow_model.fit(x=flow_batch, y=label_batch, batch_size=dataset_violent.batch_size, verbose=1)
+
 
     # rgb_example = dataset_violent.videos_frames[0][None, ...]
     # flow_example = dataset_violent.videos_flows[0][None, ...]
